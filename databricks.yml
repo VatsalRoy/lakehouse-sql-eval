@@ -1,0 +1,22 @@
+bundle:
+  name: lakehouse-sql-eval
+
+# Pull in every job/pipeline definition from the resources folder
+include:
+  - resources/*.yml
+
+# Values we reuse everywhere, so we never hard-code them
+variables:
+  catalog:
+    description: Unity Catalog catalog to use
+    default: workspace
+  llm_endpoint:
+    description: Foundation Model endpoint used by ai_query
+    default: databricks-qwen35-122b-a10b
+
+targets:
+  dev:
+    mode: development     # prefixes resource names with [dev yourname], safe for experimenting
+    default: true
+    workspace:
+      host: https://dbc-2b97a233-53d5.cloud.databricks.com

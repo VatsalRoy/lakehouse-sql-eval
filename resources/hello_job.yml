@@ -1,0 +1,11 @@
+resources:
+  jobs:
+    hello_job:
+      name: hello_job
+      tasks:
+        - task_key: check_setup
+          notebook_task:
+            notebook_path: ../src/hello.py   # path is relative to THIS yaml file
+            base_parameters:
+              catalog: ${var.catalog}
+              llm_endpoint: ${var.llm_endpoint}
