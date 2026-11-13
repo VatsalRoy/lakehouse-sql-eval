@@ -1,0 +1,27 @@
+resources:
+  jobs:
+    build_data:
+      name: build_data
+      tasks:
+        - task_key: generate_data
+          notebook_task:
+            notebook_path: ../src/data/generate_data.py
+            base_parameters:
+              catalog: ${var.catalog}
+              n_orders: "200000"
+              seed: "42"
+              overwrite: "false"
+
+        - task_key: run_pipeline
+          depends_on:
+            - task_key: generate_data
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.retail_medallion.id}
+
+        - task_key: validate
+          depends_on:
+            - task_key: run_pipeline
+          notebook_task:
+            notebook_path: ../src/checks/validate_data.py
+            base_parameters:
+              catalog: ${var.catalog}

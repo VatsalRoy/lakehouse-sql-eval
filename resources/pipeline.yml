@@ -1,0 +1,14 @@
+resources:
+  pipelines:
+    retail_medallion:
+      name: retail_medallion
+      catalog: ${var.catalog}
+      schema: silver              # default schema; our tables use full names anyway
+      serverless: true
+      channel: CURRENT
+      root_path: ../src/pipeline
+      libraries:
+        - glob:
+            include: ../src/pipeline/**
+      configuration:
+        catalog: ${var.catalog}   # read in code as spark.conf.get("catalog") / ${catalog}
