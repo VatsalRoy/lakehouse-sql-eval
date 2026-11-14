@@ -1,0 +1,73 @@
+# Data-catalog documentation for the gold tables (context for condition B).
+# These describe what the DATA IS, like a typical data catalog does.
+# They deliberately do NOT state metric definitions ("net revenue = ...") - those live only in the metric view.
+tables:
+  dim_customer:
+    comment: One row per customer account, including internal test accounts and soft-deleted customers.
+    columns:
+      customer_id: Unique customer key.
+      first_name: Customer first name.
+      last_name: Customer last name.
+      email: Customer email address (lowercase). Test accounts use the test.internal domain.
+      country: ISO 2-letter country code (US, CA, GB, DE, FR, IN).
+      region: Sales region (North America, Europe, Asia Pacific).
+      signup_date: Date the account was created.
+      is_test_account: True for internal QA/test accounts, not real customers.
+      is_deleted: True if the customer deleted their account (soft delete; history is kept).
+      deleted_at: When the account was deleted; null if not deleted.
+  dim_product:
+    comment: One row per product in the catalog.
+    columns:
+      product_id: Unique product key. Product names are not guaranteed unique.
+      product_name: Display name of the product.
+      category: Product category, e.g. Electronics, Apparel, Books.
+      list_price_usd: Catalog list price in USD before discounts.
+      is_active: True if the product is currently sold.
+  dim_date:
+    comment: One row per calendar day with calendar and fiscal attributes. The fiscal year starts on February 1.
+    columns:
+      date: The calendar date. Join to order_date or refund_date.
+      calendar_year: Gregorian year.
+      calendar_quarter: Gregorian quarter 1-4 (Q1 = Jan-Mar).
+      calendar_month: Gregorian month 1-12.
+      month_name: Month name, e.g. January.
+      day_of_week: Day name, e.g. Monday.
+      is_weekend: True for Saturday and Sunday.
+      fiscal_year: Fiscal year, named by the calendar year in which it ends (FY2026 = 2025-02-01 to 2026-01-31).
+      fiscal_quarter: Fiscal quarter 1-4 (Q1 = Feb-Apr, Q2 = May-Jul, Q3 = Aug-Oct, Q4 = Nov-Jan).
+      fiscal_month: Fiscal month 1-12 (1 = February).
+      fiscal_quarter_label: Label like FY2026-Q1.
+  fact_orders:
+    comment: One row per order header, all statuses, all customers (including test accounts).
+    columns:
+      order_id: Unique order key.
+      customer_id: Customer who placed the order. Joins to dim_customer.
+      order_date: Date the order was placed. Joins to dim_date.date.
+      order_ts: Timestamp the order was placed.
+      status: Order status - completed, cancelled or pending.
+      channel: Sales channel - web, mobile or store.
+      currency: Currency the customer paid in (USD, EUR, GBP, CAD, INR).
+      order_total_local: Order total in the order's own currency. Do not add across currencies.
+      fx_usd_per_unit: USD value of one unit of the order currency for the order month.
+      order_total_usd: Order total converted to USD at the order-month exchange rate.
+  fact_order_items:
+    comment: One row per order line (product within an order). Several lines per order.
+    columns:
+      order_id: Order the line belongs to. Joins to fact_orders.
+      line_number: Line position within the order (1, 2, 3...).
+      product_id: Product on the line. Joins to dim_product.
+      quantity: Units of the product on this line.
+      unit_price_local: Price per unit in the order currency, after discount.
+      line_amount_local: quantity x unit price, in the order currency.
+      line_amount_usd: Line amount converted to USD at the order-month exchange rate.
+  fact_refunds:
+    comment: One row per refund. An order can be refunded fully or partially, usually days or weeks after it was placed.
+    columns:
+      refund_id: Unique refund key.
+      order_id: The refunded order. Joins to fact_orders.
+      refund_ts: Timestamp the refund was issued.
+      refund_date: Date the refund was issued (may be in a later period than the order).
+      reason: Refund reason - damaged, wrong_item, not_as_described, changed_mind, late_delivery.
+      currency: Currency of the original order.
+      refund_amount_local: Refund amount in the order currency.
+      refund_amount_usd: Refund amount in USD, at the original order's exchange rate.

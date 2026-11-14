@@ -12,7 +12,7 @@ variables:
     default: workspace
   llm_endpoint:
     description: Foundation Model endpoint used by ai_query
-    default: databricks-qwen35-122b-a10b
+    default: databricks-meta-llama-3-3-70b-instruct
 
 targets:
   dev:

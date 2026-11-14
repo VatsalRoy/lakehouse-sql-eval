@@ -1,0 +1,33 @@
+resources:
+  jobs:
+    generate_sql:
+      name: generate_sql
+      parameters:                       # change these from the UI or the CLI without editing code
+        - name: limit_questions
+          default: "60"
+        - name: seeds
+          default: "3"
+        - name: conditions
+          default: "A_raw,B_comments,C_metric_view,C_nosyn"
+      tasks:
+        - task_key: apply_comments
+          notebook_task:
+            notebook_path: ../src/catalog/apply_comments.py
+            base_parameters:
+              catalog: ${var.catalog}
+              repo_root: ${workspace.file_path}
+
+        - task_key: generate
+          depends_on:
+            - task_key: apply_comments
+          notebook_task:
+            notebook_path: ../src/generate/gen_sql.py
+            base_parameters:
+              catalog: ${var.catalog}
+              repo_root: ${workspace.file_path}
+              llm_endpoint: ${var.llm_endpoint}
+              conditions: "{{job.parameters.conditions}}"
+              seeds: "{{job.parameters.seeds}}"
+              limit_questions: "{{job.parameters.limit_questions}}"
+              temperature: "0.2"
+              max_tokens: "4000"
