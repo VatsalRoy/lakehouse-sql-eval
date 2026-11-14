@@ -1,0 +1,138 @@
+version: 1.1
+comment: |-
+  Governed sales KPIs at ORDER grain. Single source of truth for revenue questions.
+  All money is USD (FX of the order month). Test accounts are always excluded.
+  Revenue measures count only completed orders. Refunds are attributed to the ORIGINAL order date.
+  Fiscal year starts Feb 1 and is named by the year it ends (FY2026 = Feb 2025 - Jan 2026).
+  "Q3 2025" means fiscal Q3 of FY2025 unless the question says calendar.
+
+source: |-
+  SELECT o.order_id, o.customer_id, o.order_date, o.status, o.channel, o.currency,
+         o.order_total_usd,
+         COALESCE(r.refund_usd, 0) AS refund_usd,
+         c.is_test_account
+  FROM {{catalog}}.gold.fact_orders o
+  JOIN {{catalog}}.gold.dim_customer c ON c.customer_id = o.customer_id
+  LEFT JOIN (SELECT order_id, SUM(refund_amount_usd) AS refund_usd
+             FROM {{catalog}}.gold.fact_refunds GROUP BY order_id) r
+    ON r.order_id = o.order_id
+
+filter: NOT source.is_test_account
+
+joins:
+  - name: customer
+    source: {{catalog}}.gold.dim_customer
+    'on': source.customer_id = customer.customer_id
+  - name: cal
+    source: {{catalog}}.gold.dim_date
+    'on': source.order_date = cal.date
+
+dimensions:
+  - name: order_date
+    expr: source.order_date
+    display_name: Order Date
+    comment: Date the order was placed. Revenue and refunds are reported on this date.
+    synonyms: [date, day, purchase date]
+  - name: fiscal_year
+    expr: cal.fiscal_year
+    display_name: Fiscal Year
+    comment: Fiscal year starting Feb 1, named by the year it ends. FY2026 = 2025-02-01 to 2026-01-31.
+    synonyms: [FY, financial year, fiscal]
+  - name: fiscal_quarter
+    expr: cal.fiscal_quarter
+    display_name: Fiscal Quarter
+    comment: 1-4 within the fiscal year. Q1 = Feb-Apr, Q2 = May-Jul, Q3 = Aug-Oct, Q4 = Nov-Jan. "Q3" alone means this.
+    synonyms: [quarter, Q, fiscal Q]
+  - name: fiscal_quarter_label
+    expr: cal.fiscal_quarter_label
+    display_name: Fiscal Quarter Label
+    comment: Label such as FY2025-Q3.
+  - name: fiscal_month
+    expr: cal.fiscal_month
+    display_name: Fiscal Month
+    comment: 1-12 within the fiscal year. Fiscal month 1 = February.
+  - name: calendar_year
+    expr: cal.calendar_year
+    display_name: Calendar Year
+    comment: Gregorian year. Use only when a question says calendar year or names months explicitly.
+    synonyms: [year, calendar]
+  - name: calendar_quarter
+    expr: cal.calendar_quarter
+    display_name: Calendar Quarter
+    comment: 1-4 Gregorian quarter (Q1 = Jan-Mar). Use only when a question says calendar quarter.
+  - name: calendar_month
+    expr: cal.calendar_month
+    display_name: Calendar Month
+    comment: 1-12 Gregorian month (1 = January).
+    synonyms: [month]
+  - name: is_weekend
+    expr: cal.is_weekend
+    display_name: Weekend
+    comment: True for Saturday and Sunday.
+  - name: region
+    expr: customer.region
+    display_name: Region
+    synonyms: [market, geography, territory]
+  - name: country
+    expr: customer.country
+    display_name: Country
+    comment: ISO 2-letter country code of the customer, e.g. US, DE, IN.
+    synonyms: [nation, country code]
+  - name: channel
+    expr: source.channel
+    display_name: Sales Channel
+    comment: web, mobile or store.
+    synonyms: [sales channel, platform]
+  - name: currency
+    expr: source.currency
+    display_name: Order Currency
+  - name: order_status
+    expr: source.status
+    display_name: Order Status
+    comment: completed, cancelled or pending. Revenue measures already restrict to completed.
+    synonyms: [status]
+  - name: customer_is_deleted
+    expr: customer.is_deleted
+    display_name: Customer Deleted
+    comment: Soft-deleted customer. Their past revenue still counts; they are never active customers.
+
+measures:
+  - name: gross_revenue
+    expr: SUM(source.order_total_usd) FILTER (WHERE source.status = 'completed')
+    display_name: Gross Revenue
+    comment: USD value of completed orders from real (non-test) customers, before refunds.
+    synonyms: [gross sales, bookings, revenue before refunds]
+  - name: refunds
+    expr: SUM(source.refund_usd) FILTER (WHERE source.status = 'completed')
+    display_name: Refunds
+    comment: USD refunded on completed orders, attributed to the original order date.
+    synonyms: [refunded amount, returns, refund value]
+  - name: net_revenue
+    expr: MEASURE(gross_revenue) - MEASURE(refunds)
+    display_name: Net Revenue
+    comment: The default meaning of revenue, sales or income. Gross revenue minus refunds.
+    synonyms: [revenue, sales, income, net sales, total sales, money we made, earnings, turnover]
+  - name: completed_orders
+    expr: COUNT(1) FILTER (WHERE source.status = 'completed')
+    display_name: Orders
+    comment: The default meaning of "orders". Completed orders from non-test customers.
+    synonyms: [orders, number of orders, order count, purchases]
+  - name: all_order_records
+    expr: COUNT(1)
+    display_name: All Order Records
+    comment: Every order row from non-test customers, any status. Use only when a question asks for all statuses.
+  - name: active_customers
+    expr: COUNT(DISTINCT source.customer_id) FILTER (WHERE source.status = 'completed' AND NOT customer.is_deleted)
+    display_name: Active Customers
+    comment: Distinct non-test, non-deleted customers with at least one completed order in the period.
+    synonyms: [active users, buying customers, customers who purchased]
+  - name: average_order_value
+    expr: MEASURE(net_revenue) / MEASURE(completed_orders)
+    display_name: Average Order Value
+    comment: Net revenue divided by completed orders.
+    synonyms: [AOV, avg order value, average basket, basket size]
+  - name: refund_rate
+    expr: MEASURE(refunds) / MEASURE(gross_revenue)
+    display_name: Refund Rate
+    comment: Share of gross revenue refunded (by value, not by count).
+    synonyms: [return rate, share refunded, percent refunded]

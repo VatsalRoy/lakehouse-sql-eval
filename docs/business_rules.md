@@ -13,3 +13,16 @@
 - **Average order value (AOV):** net revenue / number of completed orders (non-test).
 - **Refund rate:** refunded USD / gross revenue (by value, not by count).
 - **Line-item revenue (by category/product):** sum of line_amount_usd; never sum order totals after joining to lines.
+
+
+## Vocabulary (how plain-English questions map to definitions)
+
+- "revenue", "sales", "income", "money we made" (no qualifier) = **net revenue**.
+- "orders" (no qualifier) = **completed orders from non-test customers**.
+- "Q1"–"Q4" = **fiscal** quarters unless the question says "calendar".
+  Q1 = Feb–Apr, Q2 = May–Jul, Q3 = Aug–Oct, Q4 = Nov–Jan.
+- "Q3 2025" or "fiscal 2025" = fiscal year **FY2025** (Feb 1, 2024 – Jan 31, 2025).
+- A named month ("January 2025") or "calendar year/quarter" = calendar dates.
+- "Customer accounts" or "records" = raw rows (includes test and deleted), used only when a question says so explicitly.
+- Product/category revenue is gross line revenue; refunds are NOT allocated to products.
+- Product names are not unique; always group products by product_id.

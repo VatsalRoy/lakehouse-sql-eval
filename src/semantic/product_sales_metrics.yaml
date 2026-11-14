@@ -1,0 +1,63 @@
+version: 1.1
+comment: |-
+  Product and category KPIs at ORDER LINE grain. Use this view for anything by product or category.
+  Line revenue is gross (before refunds): refunds are recorded per order and are NOT allocated to products.
+  Test accounts are always excluded; revenue counts only completed orders. Money is USD.
+
+source: |-
+  SELECT i.order_id, i.line_number, i.product_id, i.quantity, i.line_amount_usd,
+         o.order_date, o.status, o.channel, c.is_test_account
+  FROM {{catalog}}.gold.fact_order_items i
+  JOIN {{catalog}}.gold.fact_orders o ON o.order_id = i.order_id
+  JOIN {{catalog}}.gold.dim_customer c ON c.customer_id = o.customer_id
+
+filter: NOT source.is_test_account
+
+joins:
+  - name: product
+    source: {{catalog}}.gold.dim_product
+    'on': source.product_id = product.product_id
+  - name: cal
+    source: {{catalog}}.gold.dim_date
+    'on': source.order_date = cal.date
+
+dimensions:
+  - name: category
+    expr: product.category
+    display_name: Product Category
+    synonyms: [product category, department, product line]
+  - name: product_id
+    expr: source.product_id
+    display_name: Product ID
+    comment: Unique product key. Product names are NOT unique; group by this.
+  - name: product_name
+    expr: product.product_name
+    display_name: Product Name
+    synonyms: [product, item, SKU name]
+  - name: fiscal_year
+    expr: cal.fiscal_year
+    display_name: Fiscal Year
+    comment: Fiscal year starting Feb 1, named by the year it ends.
+    synonyms: [FY, financial year]
+  - name: fiscal_quarter
+    expr: cal.fiscal_quarter
+    display_name: Fiscal Quarter
+    synonyms: [quarter, Q]
+  - name: calendar_year
+    expr: cal.calendar_year
+    display_name: Calendar Year
+  - name: channel
+    expr: source.channel
+    display_name: Sales Channel
+
+measures:
+  - name: product_gross_revenue
+    expr: SUM(source.line_amount_usd) FILTER (WHERE source.status = 'completed')
+    display_name: Product Gross Revenue
+    comment: USD value of completed order lines (before refunds) from non-test customers.
+    synonyms: [category revenue, product revenue, product sales, category sales]
+  - name: units_sold
+    expr: SUM(source.quantity) FILTER (WHERE source.status = 'completed')
+    display_name: Units Sold
+    comment: Units on completed order lines from non-test customers.
+    synonyms: [units, quantity sold, items sold]

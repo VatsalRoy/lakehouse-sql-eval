@@ -1,0 +1,20 @@
+resources:
+  jobs:
+    build_semantic_layer:
+      name: build_semantic_layer
+      tasks:
+        - task_key: create_metric_views
+          notebook_task:
+            notebook_path: ../src/semantic/create_metric_views.py
+            base_parameters:
+              catalog: ${var.catalog}
+              semantic_dir: ${workspace.file_path}/src/semantic
+
+        - task_key: validate_questions
+          depends_on:
+            - task_key: create_metric_views
+          notebook_task:
+            notebook_path: ../src/questions/validate_questions.py
+            base_parameters:
+              catalog: ${var.catalog}
+              repo_root: ${workspace.file_path}
