@@ -149,3 +149,30 @@ def extract_sql(response) -> str | None:
     sql = sql.strip().rstrip(";").strip()
     m = re.search(r"\b(WITH|SELECT)\b", sql, re.IGNORECASE)   # drop any prose before the query
     return sql[m.start():] if m else (sql or None)
+
+
+
+# ----------------------------------------------------------------------------- LLM judge 
+JUDGE_TEMPLATE = """You are a senior analytics engineer reviewing SQL that a colleague wrote for a retail company's Databricks lakehouse.
+
+{{context}}
+
+Question: {{question}}
+
+Proposed SQL:
+```sql
+{{sql}}
+```
+
+Does this SQL correctly answer the question, the way the business would expect? Check the tables, joins, filters,
+time periods and the meaning of any business terms - not only whether the query would run.
+Reply in exactly this format:
+VERDICT: CORRECT or VERDICT: INCORRECT
+REASON: <one sentence>"""
+
+JUDGE_VERSION = hashlib.sha1(JUDGE_TEMPLATE.encode()).hexdigest()[:8]
+
+
+def render_judge(context: str, question: str, sql: str) -> str:
+    return (JUDGE_TEMPLATE.replace("{{context}}", context)
+            .replace("{{question}}", question).replace("{{sql}}", sql or ""))

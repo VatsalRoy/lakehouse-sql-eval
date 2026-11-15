@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Text-to-SQL evaluation console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0b0d10}
+a{color:#5eead4}a:hover{color:#99f6e4}
+.mono{font-family:'JetBrains Mono',monospace}
+.disp{font-family:'Space Grotesk',sans-serif}
+.card{background:#12151a;border:1px solid #1f242c;border-radius:16px}
+.muted{color:#9aa3ae}
+.dot{display:inline-block;border-radius:50%}
+select:focus-visible,a:focus-visible,button:focus-visible{outline:2px solid #5eead4;outline-offset:2px}
+</style>
+</head>
+<body>
+<div style="font-family: Inter, system-ui, sans-serif; color: #e7e9ec; background: #0b0d10; min-height: 100vh">
+
+<nav aria-label="Project" style="border-bottom: 1px solid #1d2128; background: #0e1014">
+  <div style="max-width: 1280px; margin: 0 auto; padding: 0 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; min-height: 60px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="#34d399" stroke-width="2"></rect><path d="M8 15l3-4 2 2 3-5" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span class="disp" style="font-weight: 600; font-size: 16px; letter-spacing: -0.01em">lakehouse-sql-eval</span>
+    </div>
+    <div style="display: flex; gap: 4px; flex-wrap: wrap">
+      <a href="/" aria-current="page" style="color: #f3f4f6; text-decoration: none; font-size: 13px; font-weight: 500; padding: 8px 12px; border-radius: 8px; background: #1a1e25">Overview</a>
+      <a href="https://github.com/VatsalRoy/lakehouse-sql-eval" style="color: #9aa3ae; text-decoration: none; font-size: 13px; font-weight: 500; padding: 8px 12px; border-radius: 8px">Methodology</a>
+    </div>
+    <div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 12px; color: #9aa3ae">
+      <span style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: #0f2a20; color: #6ee7b7; border: 1px solid #14532d"><span class="dot" style="width: 7px; height: 7px; background: #34d399"></span>Last eval run {{ last_run }}</span>
+      <span class="mono">{{ model }} · {{ n_generations }} generations</span>
+    </div>
+  </div>
+</nav>
+
+<header style="padding: 44px 24px 36px; border-bottom: 1px solid #1d2128">
+  <div style="max-width: 1280px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-end">
+    <div style="flex: 3 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+      <div class="mono" style="font-size: 12px; letter-spacing: 0.04em; color: #7c8592">60 business questions × 3 runs × 4 grounding conditions</div>
+      <h1 class="disp" style="margin: 0; font-size: 40px; line-height: 1.08; font-weight: 600; letter-spacing: -0.025em; max-width: 720px">A semantic layer nearly doubled how often the AI got the number right</h1>
+      <div style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; margin-top: 10px">
+        <div style="padding: 16px 20px; border-radius: 14px; background: #12151a; border: 1px solid #222731; display: flex; flex-direction: column; gap: 4px; min-width: 150px">
+          <span style="font-size: 12px; color: #9aa3ae">Raw schema</span>
+          <span class="mono" style="font-size: 54px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; color: #9aa3ae">{{ hero.a }}<span style="font-size: 28px">%</span></span>
+        </div>
+        <div style="display: flex; align-items: center" aria-hidden="true"><svg width="40" height="24" viewBox="0 0 40 24"><path d="M2 12h32M26 5l8 7-8 7" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+        <div style="padding: 16px 20px; border-radius: 14px; background: #0f2a20; border: 1px solid #1d5c43; display: flex; flex-direction: column; gap: 4px; min-width: 150px">
+          <span style="font-size: 12px; color: #6ee7b7">With metric view</span>
+          <span class="mono" style="font-size: 54px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; color: #34d399">{{ hero.c }}<span style="font-size: 28px">%</span></span>
+        </div>
+        <div style="display: flex; flex-direction: column; justify-content: center; gap: 6px; padding-left: 8px">
+          <span class="mono" style="font-size: 22px; font-weight: 600; color: #34d399">{{ hero.gain }}</span>
+          <span style="font-size: 12px; color: #9aa3ae">{{ hero.gain_ci }} · {{ hero.gain_sig }}</span>
+        </div>
+      </div>
+    </div>
+    <div style="flex: 2 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+      <div style="background: #1f1214; border: 1px solid #4a1d20; border-radius: 14px; padding: 18px 20px; display: flex; gap: 16px; align-items: baseline">
+        <span class="mono" style="font-size: 30px; font-weight: 600; color: #ff7b72; min-width: 72px">{{ hero.silent }}%</span>
+        <span style="font-size: 14px; line-height: 1.5; color: #e4c9c7">of raw-schema failures were silent: the query ran and returned a believable wrong number</span>
+      </div>
+      <div style="background: #12151a; border: 1px solid #222731; border-radius: 14px; padding: 18px 20px; display: flex; gap: 16px; align-items: baseline">
+        <span class="mono" style="font-size: 30px; font-weight: 600; color: #e7e9ec; min-width: 72px">{{ hero.b_gain }}</span>
+        <span style="font-size: 14px; line-height: 1.5; color: #b9c0ca">pts from column comments alone, {{ hero.b_sig }}. Describing data does not teach business rules</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main style="max-width: 1280px; margin: 0 auto; padding: 24px 24px 56px; display: flex; flex-direction: column; gap: 18px">
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; padding: 4px 0 6px">
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px">
+    {% for c in conditions %}<span style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #12151a; border: 1px solid #222731; color: #c9cfd6"><span class="dot" style="width: 9px; height: 9px; background: {{ c.color }}"></span><strong class="mono" style="font-weight: 600; color: #f3f4f6">{{ c.key }}</strong>{{ c.label }}</span>{% endfor %}
+  </div>
+  <form method="get" style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #9aa3ae">
+    <label for="category">Category</label>
+    <select id="category" name="category" onchange="this.form.submit()" style="font-family: inherit; font-size: 13px; height: 38px; padding: 0 12px; border: 1px solid #2a303a; border-radius: 10px; background: #12151a; color: #e7e9ec">
+      <option value="ALL" {% if category == 'ALL' %}selected{% endif %}>All categories</option>
+      {% for k, n in categories %}<option value="{{ k }}" {% if category == k %}selected{% endif %}>{{ n }}</option>{% endfor %}
+    </select>
+    <noscript><button type="submit">Apply</button></noscript>
+  </form>
+</div>
+
+<section class="card" style="padding: 26px 28px; display: flex; flex-direction: column; gap: 18px">
+  <div>
+    <h2 class="disp" style="margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em">Where the semantic layer helps, and where it doesn't</h2>
+    <p style="margin: 6px 0 0; font-size: 13px; color: #9aa3ae">Accuracy per question category. The bar runs from raw schema (A) to metric view (C).</p>
+  </div>
+  <div style="display: flex; flex-direction: column">
+    <div class="mono" style="display: flex; gap: 18px; align-items: center; font-size: 11px; color: #6b7480; padding-bottom: 8px">
+      <div style="width: 180px; flex: none"></div>
+      <div style="flex: 1 1 auto; display: flex; justify-content: space-between"><span>0</span><span>25</span><span>50</span><span>75</span><span>100%</span></div>
+      <div style="width: 96px; flex: none; text-align: right">C vs A</div>
+    </div>
+    {% for r in rows %}
+    <div style="display: flex; gap: 18px; align-items: center; padding: 16px 0; border-top: 1px solid #1d2128">
+      <div style="width: 180px; flex: none">
+        <div style="font-size: 14px; font-weight: 600; color: #f3f4f6">{{ r.name }}</div>
+        <div style="font-size: 12px; color: #7c8592">{{ r.note }}</div>
+      </div>
+      <div style="flex: 1 1 auto; position: relative; height: 30px">
+        <div style="position: absolute; left: 0; right: 0; top: 14px; height: 2px; background: #1f242c"></div>
+        <div style="position: absolute; left: 25%; top: 6px; height: 18px; border-left: 1px dashed #232933"></div>
+        <div style="position: absolute; left: 50%; top: 6px; height: 18px; border-left: 1px dashed #232933"></div>
+        <div style="position: absolute; left: 75%; top: 6px; height: 18px; border-left: 1px dashed #232933"></div>
+        <div style="position: absolute; top: 12px; height: 6px; border-radius: 3px; left: {{ r.line_left }}%; width: {{ r.line_width }}%; background: {{ r.line_color }}"></div>
+        {% for d in r.dots %}<div title="{{ d.title }}" style="position: absolute; top: {{ d.top }}px; left: {{ d.v }}%; width: {{ d.size }}px; height: {{ d.size }}px; margin-left: {{ d.offset }}px; border-radius: 50%; background: {{ d.color }}; border: 2px solid #12151a; box-sizing: content-box"></div>{% endfor %}
+      </div>
+      <div style="width: 96px; flex: none; text-align: right">
+        <span class="mono" style="font-size: 14px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: {{ r.delta_bg }}; color: {{ r.delta_color }}">{{ r.delta }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% if examples %}
+<section aria-label="Examples" style="display: flex; flex-direction: column; gap: 12px; padding-top: 8px">
+  <h2 class="disp" style="margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em">What the business user would have seen</h2>
+  <div style="display: flex; flex-wrap: wrap; gap: 14px">
+    {% for e in examples %}
+    <article class="card" style="flex: 1 1 300px; min-width: 0; overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center">
+          <span class="mono" style="font-size: 12px; color: #7c8592">{{ e.id }} · condition {{ e.cond }}</span>
+          <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.02em; padding: 4px 9px; border-radius: 999px; background: #2a1316; color: #ff9b93; border: 1px solid #4a1d20">Ran fine · wrong</span>
+        </div>
+        <p style="margin: 0; font-size: 16px; font-weight: 500; line-height: 1.4; color: #f3f4f6">“{{ e.q }}”</p>
+      </div>
+      <div style="display: flex; border-top: 1px solid #1f242c; border-bottom: 1px solid #1f242c">
+        <div style="flex: 1 1 0; padding: 14px 20px; display: flex; flex-direction: column; gap: 4px; background: #170f11">
+          <span style="font-size: 11px; color: #c99a96; text-transform: uppercase; letter-spacing: 0.06em">AI answered</span>
+          <span class="mono" style="font-size: 26px; font-weight: 600; color: #ff7b72; text-decoration: line-through; text-decoration-thickness: 2px">{{ e.model }}</span>
+        </div>
+        <div style="flex: 1 1 0; padding: 14px 20px; display: flex; flex-direction: column; gap: 4px; background: #0d1a15; border-left: 1px solid #1f242c">
+          <span style="font-size: 11px; color: #8fd9b9; text-transform: uppercase; letter-spacing: 0.06em">Correct</span>
+          <span class="mono" style="font-size: 26px; font-weight: 600; color: #34d399">{{ e.truth }}</span>
+        </div>
+      </div>
+      <p style="margin: 0; padding: 14px 20px 18px; font-size: 13px; line-height: 1.55; color: #b9c0ca">{{ e.why }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section style="display: flex; flex-wrap: wrap; gap: 14px; align-items: stretch">
+  <div class="card" style="flex: 1 1 520px; min-width: 0; padding: 24px 26px; display: flex; flex-direction: column; gap: 14px">
+    <div>
+      <h2 class="disp" style="margin: 0; font-size: 17px; font-weight: 600">Outcome of every generated query</h2>
+      <p style="margin: 6px 0 0; font-size: 13px; color: #9aa3ae">The red share is what makes raw-schema SQL dangerous</p>
+    </div>
+    {% for o in outcomes %}
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div class="mono" style="width: 36px; flex: none; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600"><span class="dot" style="width: 9px; height: 9px; background: {{ o.color }}"></span>{{ o.key }}</div>
+      <div style="flex: 1 1 auto; display: flex; gap: 3px; height: 30px">
+        {% if o.correct %}<div style="width: {{ o.correct }}%; background: #232a33; color: #d5dae0; font-size: 12px; font-weight: 600; display: flex; align-items: center; padding-left: 10px; box-sizing: border-box; border-radius: 6px; white-space: nowrap; overflow: hidden">{{ o.correct }}% correct</div>{% endif %}
+        {% if o.silent %}<div style="width: {{ o.silent }}%; background: #e5484d; color: #ffffff; font-size: 12px; font-weight: 600; display: flex; align-items: center; padding-left: 8px; box-sizing: border-box; overflow: hidden; white-space: nowrap; border-radius: 6px">{{ o.silent_label }}</div>{% endif %}
+        {% if o.error %}<div style="width: {{ o.error }}%; background: #4a2427; color: #ffb4ab; font-size: 12px; font-weight: 600; display: flex; align-items: center; padding-left: 6px; box-sizing: border-box; overflow: hidden; white-space: nowrap; border-radius: 6px">{{ o.error_label }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: #9aa3ae; padding-left: 48px">
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #232a33; border: 1px solid #3a424d"></span>Correct</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #e5484d"></span>Silent wrong</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #4a2427"></span>Error (visible)</span>
+    </div>
+  </div>
+
+  <div class="card" style="flex: 1 1 520px; min-width: 0; padding: 24px 26px; display: flex; flex-direction: column; gap: 12px">
+    <div>
+      <h2 class="disp" style="margin: 0; font-size: 17px; font-weight: 600">Top reason each condition failed</h2>
+      <p style="margin: 6px 0 0; font-size: 13px; color: #9aa3ae">Share of that condition's failed generations</p>
+    </div>
+    {% for r in reasons %}
+    <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid #1d2128">
+      <div class="mono" style="width: 36px; flex: none; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding-top: 1px"><span class="dot" style="width: 9px; height: 9px; background: {{ r.color }}"></span>{{ r.key }}</div>
+      <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+        {% for it in r["items"] %}
+        <div style="display: flex; align-items: center; gap: 10px">
+          <span style="width: 196px; flex: none; font-size: 13px; color: #d5dae0">{{ it.name }}</span>
+          <div style="flex: 1 1 auto; height: 8px; background: #1b2027; border-radius: 4px"><div style="width: {{ it.pct }}%; height: 100%; background: #8b95a5; border-radius: 4px"></div></div>
+          <span class="mono" style="width: 40px; text-align: right; font-size: 12px; font-weight: 600">{{ it.pct }}%</span>
+        </div>
+        {% else %}
+        <span style="font-size: 13px; color: #7c8592">No failures in this category</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section style="display: flex; flex-wrap: wrap; gap: 14px; align-items: stretch">
+  <div class="card" style="flex: 1 1 360px; min-width: 0; padding: 24px 26px; display: flex; flex-direction: column; gap: 12px">
+    <h2 class="disp" style="margin: 0; font-size: 17px; font-weight: 600">Can an LLM judge catch these?</h2>
+    <p style="margin: 0; font-size: 13px; color: #9aa3ae">Share of WRONG answers the judge approved</p>
+    {% for j in judge %}
+    <div style="display: flex; align-items: center; gap: 10px">
+      <span class="mono" style="width: 36px; flex: none; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600"><span class="dot" style="width: 9px; height: 9px; background: {{ j.color }}"></span>{{ j.key }}</span>
+      <div style="flex: 1 1 auto; height: 12px; background: #1b2027; border-radius: 6px"><div style="width: {{ j.fp }}%; height: 100%; background: #ff7b72; border-radius: 6px"></div></div>
+      <span class="mono" style="width: 40px; text-align: right; font-size: 13px; font-weight: 600">{{ j.fp }}%</span>
+    </div>
+    {% endfor %}
+    <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: #c9cfd6; border-left: 2px solid #ff7b72; padding: 2px 0 2px 12px">{{ judge_note }}</p>
+  </div>
+
+  <div class="card" style="flex: 1 1 360px; min-width: 0; padding: 24px 26px; display: flex; flex-direction: column; gap: 12px">
+    <h2 class="disp" style="margin: 0; font-size: 17px; font-weight: 600">Do synonyms matter?</h2>
+    <p style="margin: 0; font-size: 13px; color: #9aa3ae">Questions using everyday words like “sales” or “income”</p>
+    {% for s in synonym %}
+    <div style="display: flex; align-items: center; gap: 10px">
+      <span class="mono" style="width: 36px; flex: none; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600"><span class="dot" style="width: 9px; height: 9px; background: {{ s.color }}"></span>{{ s.key }}</span>
+      <div style="flex: 1 1 auto; height: 12px; background: #1b2027; border-radius: 6px"><div style="width: {{ s.v }}%; height: 100%; background: {{ s.color }}; border-radius: 6px"></div></div>
+      <span class="mono" style="width: 40px; text-align: right; font-size: 13px; font-weight: 600">{{ s.v }}%</span>
+    </div>
+    {% endfor %}
+    <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: #c9cfd6; border-left: 2px solid #34d399; padding: 2px 0 2px 12px">{{ syn_note }}</p>
+  </div>
+
+  <div class="card" style="flex: 1 1 360px; min-width: 0; padding: 24px 26px; display: flex; flex-direction: column; gap: 12px">
+    <h2 class="disp" style="margin: 0; font-size: 17px; font-weight: 600">What it costs</h2>
+    <p style="margin: 0; font-size: 13px; color: #9aa3ae">Prompt tokens per question vs. accuracy</p>
+    {% for k in cost %}
+    <div style="display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid #1d2128">
+      <span class="mono" style="width: 36px; flex: none; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600"><span class="dot" style="width: 9px; height: 9px; background: {{ k.color }}"></span>{{ k.key }}</span>
+      <span class="mono" style="flex: 1 1 auto; font-size: 13px; color: #b9c0ca">{{ k.tokens }} tok</span>
+      <span class="mono" style="font-size: 13px; font-weight: 600">{{ k.acc }}</span>
+    </div>
+    {% endfor %}
+    <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: #c9cfd6; border-left: 2px solid #8b95a5; padding: 2px 0 2px 12px">{{ cost_note }}</p>
+  </div>
+</section>
+
+<footer style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; color: #7c8592; padding-top: 8px; border-top: 1px solid #1d2128">
+  <span class="mono">eval.summary · eval.scores · eval.failures · 95% CI from question-level bootstrap</span>
+  <a href="https://github.com/VatsalRoy/lakehouse-sql-eval">Methodology and code</a>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

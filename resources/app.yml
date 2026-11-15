@@ -1,0 +1,11 @@
+resources:
+  apps:
+    eval_console:
+      name: sql-eval-console
+      description: Text-to-SQL evaluation console (reads workspace.eval tables)
+      source_code_path: ../src/app
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE

@@ -13,7 +13,14 @@ variables:
   llm_endpoint:
     description: Foundation Model endpoint used by ai_query
     default: databricks-meta-llama-3-3-70b-instruct
-
+  judge_endpoint:
+    description: LLM used as the judge
+    default: databricks-meta-llama-3-3-70b-instruct
+  warehouse_id:
+    description: SQL warehouse the app queries
+    lookup:
+      warehouse: "Serverless Starter Warehouse"
+    
 targets:
   dev:
     mode: development     # prefixes resource names with [dev yourname], safe for experimenting

@@ -39,7 +39,8 @@ WHERE o.status = 'completed' AND NOT c.is_test_account"""
 Q = []
 def q(id, category, question, gold_sql, mv_sql=None, wording="explicit", trap="", ordered=False):
     Q.append(dict(id=id, category=category, question=question, gold_sql=gold_sql.strip(),
-                  mv_sql=mv_sql.strip() if mv_sql else None, wording=wording, trap=trap, ordered=ordered))
+                  mv_sql=mv_sql.strip() if mv_sql else None, wording=wording, trap=trap,
+                  ordered=False))  # every result row carries its own key (quarter, month...), so order adds nothing
 
 # ---------------------------------------------------------------- LOOKUP (15)
 # Simple, unambiguous facts. The semantic layer should barely matter here.

@@ -1,0 +1,36 @@
+resources:
+  jobs:
+    evaluate_sql:
+      name: evaluate_sql
+      tasks:
+        - task_key: execute
+          notebook_task:
+            notebook_path: ../src/evaluate/execute.py
+            base_parameters:
+              catalog: ${var.catalog}
+              repo_root: ${workspace.file_path}
+              llm_endpoint: ${var.llm_endpoint}
+              timeout_s: "60"
+              workers: "8"
+
+        - task_key: judge
+          depends_on:
+            - task_key: execute
+          notebook_task:
+            notebook_path: ../src/evaluate/judge.py
+            base_parameters:
+              catalog: ${var.catalog}
+              repo_root: ${workspace.file_path}
+              llm_endpoint: ${var.llm_endpoint}
+              judge_endpoint: ${var.judge_endpoint}
+
+        - task_key: score_and_log
+          depends_on:
+            - task_key: judge
+          notebook_task:
+            notebook_path: ../src/evaluate/run_eval.py
+            base_parameters:
+              catalog: ${var.catalog}
+              repo_root: ${workspace.file_path}
+              llm_endpoint: ${var.llm_endpoint}
+              judge_endpoint: ${var.judge_endpoint}

@@ -1,0 +1,11 @@
+resources:
+  jobs:
+    analyze_results:
+      name: analyze_results
+      tasks:
+        - task_key: analyze
+          notebook_task:
+            notebook_path: ../src/analysis/analyze.py
+            base_parameters:
+              catalog: ${var.catalog}
+              repo_root: ${workspace.file_path}

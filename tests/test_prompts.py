@@ -57,3 +57,10 @@ def test_extract_sql_variants():
 def test_extract_sql_from_reasoning_blocks():
     raw = '[{"type": "reasoning", "summary": [{"text": "think ```sql SELECT 0```"}]}, {"type": "text", "text": "```sql\\nSELECT 42\\n```"}]'
     assert prompts.extract_sql(raw) == "SELECT 42"
+
+
+
+def test_judge_prompt_contains_everything():
+    p = prompts.render_judge(ctx("B_comments"), "What was revenue?", "SELECT 1")
+    assert "SELECT 1" in p and "What was revenue?" in p and "-- Order status" in p
+    assert "{{" not in p and "VERDICT: CORRECT" in p
