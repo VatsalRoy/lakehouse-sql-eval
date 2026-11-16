@@ -1,0 +1,36 @@
+resources:
+  jobs:
+    nightly_regression:
+      name: nightly_regression
+      description: >
+        Re-runs the text-to-SQL benchmark and fails if quality regresses.
+        Only new rows call the LLM, so an unchanged night costs almost nothing.
+      schedule:
+        quartz_cron_expression: "0 23 4 * * ?"      # 04:23 every day
+        timezone_id: America/New_York
+        pause_status: UNPAUSED
+      email_notifications:
+        on_failure:
+          - YOUR_EMAIL@example.com                  # ← put your email here
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: generate
+          run_job_task:
+            job_id: ${resources.jobs.generate_sql.id}
+        - task_key: evaluate
+          depends_on: [{task_key: generate}]
+          run_job_task:
+            job_id: ${resources.jobs.evaluate_sql.id}
+        - task_key: analyze
+          depends_on: [{task_key: evaluate}]
+          run_job_task:
+            job_id: ${resources.jobs.analyze_results.id}
+        - task_key: gate
+          depends_on: [{task_key: analyze}]
+          notebook_task:
+            notebook_path: ../src/evaluate/gate.py
+            base_parameters:
+              catalog: ${var.catalog}
+              min_accuracy: "0.75"
+              max_silent_wrong: "0.12"
+              max_drop: "0.05"
